@@ -10,7 +10,7 @@ This script will perform multiple scans on the given list of IPs. You also can u
 The purpose of this tool is to provide information on a host for further analysis. It is mainly for penetration testers.<br>
 ## Requirements
 Install the following tools
-```ip install -r requirements.txt```
+```install -r requirements.txt```
 
 Note: the tool currently only works on Linux.
 ## Usage
