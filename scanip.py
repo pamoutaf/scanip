@@ -86,9 +86,9 @@ def scan_certificate(ip):
                             os.makedirs(f"{results_path}/certificates")
                         with open(f"{results_path}/certificates/certificate_output.txt",'w') as data:  
                             data.write(str(certificate))
+                        print(TextColors.MAGENTA + "[+] scan certificate done" + TextColors.RESET + "\nOutput is in Results/certificates.\n")
             except Exception as e:
                 return {"error": str(e)}
-        print(TextColors.MAGENTA + "[+] scan certificate done" + TextColors.RESET + "\nOutput is in Results/certificates.\n")
     else:
         print("No certificate")
 
@@ -139,8 +139,8 @@ def open_ports(_list):
                     # if port == '25':
                     #     check_smtp(target)
                 s.close()
-                if len(_list) > 1:
-                    print('-' * 50)
+            if not target == _list[-1]:
+                print('-' * 50)
         except socket.gaierror:
                 print("\n Hostname could not be resolved")
         except socket.OSError:
@@ -206,7 +206,6 @@ class Server_Headers():
                 print(TextColors.BLUE + "  Expires:" + TextColors.RESET, cookie.expires)
                 print(TextColors.BLUE + "  Secure:" + TextColors.RESET, cookie.secure)
                 print(TextColors.BLUE + "  HttpOnly:" + TextColors.RESET, cookie.has_nonstandard_attr('HttpOnly'))
-                print("\n" + "-"*50 + "\n")
         else:
             print("No cookies found for", self.target)
 
