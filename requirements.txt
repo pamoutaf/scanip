@@ -1,0 +1,10 @@
+ipwhois
+netaddr
+python-whois
+requests
+tldextract
+PyOpenSSL
+ipparser
+python-nmap
+datetime
+shodan
