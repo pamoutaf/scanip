@@ -4,6 +4,7 @@ This script will perform multiple scans on the given list of IPs. You also can u
 - Check open ports<br>
 - Check SSL certificate<br>
 - Check Server headers (security headers and version information)<br>
+- Checks cookie settings
 - SMTP sendmail support (Soon)<br>
 - DNS records checks (Soon)<br>
 - Shodan support for vulnerability scanner (known CVEs) and search with queries<br>
