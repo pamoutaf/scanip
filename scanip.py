@@ -8,6 +8,7 @@ import json
 import argparse
 import subprocess
 import ssl
+import json
 from datetime import datetime
 
 class TextColors:
@@ -31,10 +32,13 @@ def get_up_ips():
     dom_list = []
     for domain in _list:
         try:
-            socket.gethostbyname(domain)
-            dom_list.append(domain)
-        except socket.gaierror: 
-          print(f"Domain {domain}" + TextColors.RED + " doesn't exist." + TextColors.RESET)  
+            r = requests.get(domain, headers=HEADERS)
+            #socket.gethostbyname(domain)
+            if r.status_code == 200:
+                dom_list.append(domain)
+        #except socket.gaierror:
+        except requests.ConnectionError:
+            print(f"Domain {domain}" + TextColors.RED + " doesn't exist." + TextColors.RESET)  
     if dom_list:
         return(dom_list)
     else:
@@ -116,10 +120,13 @@ def nmap_scan():
     print(f"IP list in IPS_list.txt: {ips}")
     nmap_output_file = open(os.path.join(output_dir, "nmap_output.txt"), "w")
     output_file = f"{output_dir}/nmap_output.txt"
-    command = ["nmap"] + ips + ["--top-ports", "20", "-oN", output_file]
-    subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, shell=False,)
-    print(TextColors.MAGENTA + "[+] nmap done" + TextColors.RESET + "\nOutput is in Results/nmap.\n")
-    nmap_output_file.close()
+    try:
+        command = ["nmap"] + ips + ["--top-ports", "20", "-oN", output_file]
+        subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, shell=False,)
+        print(TextColors.MAGENTA + "[+] nmap done" + TextColors.RESET + "\nOutput is in Results/nmap.\n")
+        nmap_output_file.close()
+    except:
+        print("Can't run nmap on this endpoint")
 
 def open_ports(_list):
     print("+-" * 25)
@@ -129,6 +136,7 @@ def open_ports(_list):
     top_ports = [21, 22, 23, 25, 53, 80, 110, 111, 135, 139, 143, 443, 993, 995, 1723, 3306, 3389, 5900, 8080]
     for target in _list:
         try:
+            target = target.replace("https://","")
             print(f"Target: "+ TextColors.BLUE + f"{target}" + TextColors.RESET)
             for port in top_ports:
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #Default protocol is TCP
@@ -148,24 +156,8 @@ def open_ports(_list):
         except TimeoutError:
             print(f"\n Timeout error on {target}")
 
-# def check_smtp(target):    # check for SMTP mail servers
-#     from email.message import EmailMessage 
-#     try:
-#         sender_email = "paula@example.com"
-#         recipient_email = "recipient@example.com"
-#         subject = "test email"
-#         message = "this is a test mail"
-#         msg = EmailMessage()
-#         msg.set_content(message)
-#         msg['Subject'] = subject
-#         msg['To'] = recipient_email
-#         msg['From'] = sender_email
-#         with smtplib.SMTP(target, 25) as s:
-#             s.send_message(msg)
-#         print("Message sent!")
-#     except smtplib.SMTPDataError as e:
-#         print(f"Error:  {e}")
 
+HEADERS = {}
 class HeadersExceptions(Exception):
     def __init__(self, message):
         super().__init__(message)
@@ -173,8 +165,8 @@ class HeadersExceptions(Exception):
 class Server_Headers():
     def __init__(self, target):
         self.target = target
-        self.response = requests.get(target, verify=True)
-
+        #print(f"{target}")
+        self.response = requests.get(target, verify=True, headers=HEADERS)
     def GetServerHeaders(self):
         try:
             if self.response.headers.get("Powered-By"):
@@ -216,7 +208,7 @@ def check_server_response_headers(_list):
     for target in _list:
         try:
             print(f"Target: " + TextColors.BLUE + f"{target}" + TextColors.RESET)
-            sh = Server_Headers("https://" + target)
+            sh = Server_Headers(target)
             print(TextColors.YELLOW + "Check for server version headers" + TextColors.RESET)
             sh.GetServerHeaders()
             print(TextColors.YELLOW + "Check for security headers" + TextColors.RESET)
@@ -281,11 +273,14 @@ def main():
                     prog='python3 scanip.py [options]',
                     description='External ip scan',
                     epilog='pamoutaf')
+    parser.add_argument('-H', '--headers', help="Add headers. E.g. {Authorization: 'auth', Cookies:'cookie'}", required=False)
     parser.add_argument('-S', '--shodanAPI', help="Use api key. Combine with --target or --query.", required=False)
     parser.add_argument('--target', help="Shodan vulnerability scan on the target list in IPS_list.txt. Returns a json string and a focus on known CVEs. eg --shodanAPI --target", required=False, action='store_true')
     parser.add_argument('--query', help="Specify the query search for Shodan. eg --shodanAPI --query help for a list of all queries", required=False)
     parser.add_argument('-v', '--verbose', help="Add more output to shodan search host (prints json).", required=False, action='store_true')
     args = parser.parse_args()
+    if args.headers:
+        HEADERS = json.loads(args.headers)
     if args.shodanAPI:
         if not (args.query or args.target):
             parser.error('When using -S/--shodanAPI, you must provide either --query or --target.')
