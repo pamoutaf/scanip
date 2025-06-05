@@ -25,6 +25,8 @@ class TextColors:
 results_path='Results'
 current_dir = os.getcwd()
 
+
+
 #Function decl
 
 def get_up_ips():
@@ -77,14 +79,12 @@ def scan_certificate(ip):
                         #Cipher
                         tls_version = cipher[1]
                         cipher_used = cipher_to_trim[4:11]
-                        #output of everything
                         certificate = {
                             'wildcard': is_wildcard,
                             'valid': is_valid,
                             'tls': tls_version,
                             'ciphers': cipher_used
                         }
-                        #Making directory
                         output_dir = os.path.join(results_path, "certificates")
                         if not os.path.exists(f"{results_path}/certificates"):
                             os.makedirs(f"{results_path}/certificates")
@@ -112,11 +112,23 @@ def sanitize_list():
                     sanitized_list.append(cleaned_ip)
     return sanitized_list
 
+import tldextract
+from urllib.parse import urlparse
+
+def sanitize_nmap(ips):
+    cleaned = []
+    for url in ips:
+        ext = tldextract.extract(url)
+        domain = ".".join(part for part in [ext.subdomain, ext.domain, ext.suffix] if part)
+        cleaned.append(domain)
+    return cleaned
+
 def nmap_scan():    
     output_dir = os.path.join(results_path, "nmap")
     if not os.path.exists(f"{results_path}/nmap"):
         os.makedirs(f"{results_path}/nmap")
-    ips = sanitize_list()
+    ip_list = sanitize_list()
+    ips = sanitize_nmap(ip_list)
     print(f"IP list in IPS_list.txt: {ips}")
     nmap_output_file = open(os.path.join(output_dir, "nmap_output.txt"), "w")
     output_file = f"{output_dir}/nmap_output.txt"
@@ -134,6 +146,7 @@ def open_ports(_list):
     print("Scanning started at: " + TextColors.BLUE + str(datetime.now()) + TextColors.RESET)
     print("+-" * 25)
     top_ports = [21, 22, 23, 25, 53, 80, 110, 111, 135, 139, 143, 443, 993, 995, 1723, 3306, 3389, 5900, 8080]
+    print(f"List: {_list}")
     for target in _list:
         try:
             target = target.replace("https://","")
@@ -273,7 +286,7 @@ def main():
                     prog='python3 scanip.py [options]',
                     description='External ip scan',
                     epilog='pamoutaf')
-    parser.add_argument('-H', '--headers', help="Add headers. E.g. {Authorization: 'auth', Cookies:'cookie'}", required=False)
+    parser.add_argument('-H', '--headers', help="Add headers. E.g. '{\"Authorization\": \"auth\", \"Cookies\":\"cookie\"}'", required=False)
     parser.add_argument('-S', '--shodanAPI', help="Use api key. Combine with --target or --query.", required=False)
     parser.add_argument('--target', help="Shodan vulnerability scan on the target list in IPS_list.txt. Returns a json string and a focus on known CVEs. eg --shodanAPI --target", required=False, action='store_true')
     parser.add_argument('--query', help="Specify the query search for Shodan. eg --shodanAPI --query help for a list of all queries", required=False)
